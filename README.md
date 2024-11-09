@@ -1,0 +1,1 @@
+# mydora-simplified
