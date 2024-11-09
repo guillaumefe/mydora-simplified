@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DORA Compliance Tracker</title>
+    
+    <!-- Core React Dependencies -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+
+    <!-- D3 (Required by Recharts) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    
+    <!-- Recharts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.1.12/Recharts.min.js"></script>
+    
+    <!-- PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Configuration Babel -->
+    <script>
+        Babel.registerPreset("custom", {
+            presets: [
+                [Babel.availablePresets["env"]],
+                [Babel.availablePresets["react"]]
+            ],
+            plugins: [
+                [Babel.availablePlugins["proposal-optional-chaining"]]
+            ]
+        });
+    </script>
+    
+    <style>
+        /* Vos styles personnalisés ici (inchangés) */
+        :root {
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-200: #bfdbfe;
+            --primary-500: #3b82f6;
+            --primary-600: #2563eb;
+            --success-50: #ecfdf5;
+            --success-500: #10b981;
+            --warning-50: #fffbeb;
+            --warning-500: #f59e0b;
+            --danger-50: #fef2f2;
+            --danger-500: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-700: #374151;
+            --gray-900: #111827;
+        }
+        .fade-enter { opacity: 0; transform: translateY(10px); }
+        .fade-enter-active { 
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .fade-exit { opacity: 1; transform: translateY(0); }
+        .fade-exit-active {
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: box-shadow 0.3s ease;
+        }
+        .chart-container:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .report-page {
+            background: white;
+            padding: 2rem;
+            margin: 1rem auto;
+            max-width: 210mm;
+            min-height: 297mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-500);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .custom-tooltip {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 0.5rem;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.875rem;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        [data-role="admin"] { border-left: 4px solid var(--primary-500); }
+        [data-role="editor"] { border-left: 4px solid var(--success-500); }
+        [data-role="viewer"] { border-left: 4px solid var(--gray-500); }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 90%;
+            width: 4000px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .toast {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            transition: transform 0.3s ease-in-out;
+        }
+        .toast.show {
+            transform: translateY(0);
+        }
+        .toast.hide {
+            transform: translateY(100%);
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+            .print-only {
+                display: block;
+            }
+        }
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+    </style>
+</head>
+<body>
+    <!-- Éléments DOM nécessaires (un seul set pour éviter les doublons) -->
+    <div id="root"></div>
+    <div id="modal-root"></div>
+    <div id="tooltip-root"></div>
+
+    <!-- Loading indicator -->
+    <div id="loading" style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 20px;
+        color: #3b82f6;">
+        Loading DORA Compliance Tracker...
+    </div>
+
+    <!-- Script principal avec tous les composants et le contexte définis dans un seul bloc -->
+    <script type="text/babel">
+        // Définition du Contexte
+        const ROLES = {
+            ADMIN: 'admin',
+            EDITOR: 'editor',
+            VIEWER: 'viewer'
+        };
+
+        const PERMISSIONS = {
+            [ROLES.ADMIN]: ['create', 'read', 'update', 'delete', 'manage_users'],
+            [ROLES.EDITOR]: ['create', 'read', 'update'],
+            [ROLES.VIEWER]: ['read']
+        };
+
+        const STATUS_OPTIONS = ['all', 'A faire', 'En cours', 'Compliant', 'Non Applicable', 'Documentation'];
+        const RISK_LEVELS = ['Low', 'Medium', 'High'];
+        const AppContext = React.createContext({
+            currentUser: { role: ROLES.ADMIN }
+        });
+
+        const generateId = () => Math.random().toString(36).substr(2, 9);
+
+        // Composants Modal, Toast, RegulationForm, etc. (inchangés)
+        const Modal = ({ isOpen, onClose, title, children }) => {
+            if (!isOpen) return null;
+
+            return ReactDOM.createPortal(
+                <div className="modal-overlay" onClick={onClose}>
+                    <div 
+                        className="modal-content"
+                        onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold">{title}</h2>
+                            <button 
+                                onClick={onClose}
+                                className="text-gray-500 hover:text-gray-700 text-xl">
+                                ×
+                            </button>
+                        </div>
+                        {children}
+                    </div>
+                </div>,
+                document.getElementById('modal-root')
+            );
+        };
+
+        const Toast = ({ message, type = 'success', onClose }) => {
+            React.useEffect(() => {
+                const timer = setTimeout(onClose, 3000);
+                return () => clearTimeout(timer);
+            }, [onClose]);
+
+            return (
+                <div className={`toast ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`}>
+                    {message}
+                </div>
+            );
+        };
+
+        const RegulationForm = ({ onSubmit, onClose, initialData = null }) => {
+            const [formData, setFormData] = React.useState(initialData || {
+                category: '',
+                reference: '',
+                text: '',
+                raci: {
+                    responsible: '',
+                    accountable: '',
+                    consulted: '',
+                    informed: ''
+                },
+                status: 'A faire',
+                actions: [],
+                risks: []
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSubmit({
+                    ...formData,
+                    id: formData.id || generateId(),
+                    lastUpdated: new Date().toISOString()
+                });
+                onClose();
+            };
+
+            return (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Category</label>
+                        <select
+                            value={formData.category}
+                            onChange={e => setFormData({...formData, category: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            required>
+                            <option value="">Select category</option>
+                            <option value="Level 1">Level 1</option>
+                            <option value="RTS">RTS</option>
+                            <option value="ITS">ITS</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Reference</label>
+                        <input
+                            type="text"
+                            value={formData.reference}
+                            onChange={e => setFormData({...formData, reference: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g., L1-1, RTS-1"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Text</label>
+                        <textarea
+                            value={formData.text}
+                            onChange={e => setFormData({...formData, text: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            rows={4}
+                            placeholder="Regulation text"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                        <select
+                            value={formData.status}
+                            onChange={e => setFormData({...formData, status: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                            required>
+                            {STATUS_OPTIONS.filter(s => s !== 'all').map(status => (
+                                <option key={status} value={status}>{status}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h4 className="font-medium">RACI Matrix</h4>
+                        {Object.keys(formData.raci).map(role => (
+                            <div key={role}>
+                                <label className="block text-sm font-medium text-gray-700">
+                                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.raci[role]}
+                                    onChange={e => setFormData({
+                                        ...formData,
+                                        raci: { ...formData.raci, [role]: e.target.value }
+                                    })}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder={`Enter ${role}`}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                            {initialData ? 'Update' : 'Create'}
+                        </button>
+                    </div>
+                </form>
+            );
+        };
+
+        const RiskManagement = ({ risks = [], onUpdate }) => {
+            const [showAddRisk, setShowAddRisk] = React.useState(false);
+            const [newRisk, setNewRisk] = React.useState({
+                description: '',
+                level: 'Medium',
+                mitigations: []
+            });
+
+            const handleAddRisk = () => {
+                if (!newRisk.description) return;
+                
+                onUpdate([...risks, {
+                    ...newRisk,
+                    id: generateId(),
+                    createdAt: new Date().toISOString()
+                }]);
+                
+                setNewRisk({
+                    description: '',
+                    level: 'Medium',
+                    mitigations: []
+                });
+                setShowAddRisk(false);
+            };
+
+            return (
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Risks</h3>
+                        <button
+                            onClick={() => setShowAddRisk(true)}
+                            className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                            Add Risk
+                        </button>
+                    </div>
+
+                    {showAddRisk && (
+                        <div className="p-4 bg-gray-50 rounded-md">
+                            <input
+                                type="text"
+                                value={newRisk.description}
+                                onChange={e => setNewRisk({...newRisk, description: e.target.value})}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 mb-2"
+                                placeholder="Risk description"
+                            />
+                            <select
+                                value={newRisk.level}
+                                onChange={e => setNewRisk({...newRisk, level: e.target.value})}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 mb-2">
+                                {RISK_LEVELS.map(level => (
+                                    <option key={level} value={level}>{level}</option>
+                                ))}
+                            </select>
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    onClick={() => setShowAddRisk(false)}
+                                    className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleAddRisk}
+                                    className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        {risks.map(risk => (
+                            <div key={risk.id} className="p-4 border rounded-md">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-medium">{risk.description}</h4>
+                                        <span className={`inline-block px-2 py-1 text-sm rounded-full ${
+                                            risk.level === 'High' ? 'bg-red-100 text-red-800' :
+                                            risk.level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-green-100 text-green-800'
+                                        }`}>
+                                            {risk.level}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => onUpdate(risks.filter(r => r.id !== risk.id))}
+                                        className="text-red-500 hover:text-red-700">
+                                        ×
+                                    </button>
+                                </div>
+
+                                {risk.mitigations?.length > 0 && (
+                                    <div className="mt-2">
+                                        <h5 className="text-sm font-medium text-gray-700">Mitigations</h5>
+                                        <ul className="mt-1 space-y-1">
+                                            {risk.mitigations.map((mitigation, index) => (
+                                                <li key={index} className="text-sm text-gray-600">
+                                                    • {mitigation}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const ActionCard = ({ action, onUpdate, onDelete }) => {
+            const [showComments, setShowComments] = React.useState(false);
+            const [newComment, setNewComment] = React.useState('');
+
+            const handleAddComment = () => {
+                if (!newComment.trim()) return;
+
+                const newCommentObj = {
+                    id: generateId(),
+                    text: newComment,
+                    timestamp: new Date().toISOString(),
+                    author: 'Current User'
+                };
+
+                onUpdate({
+                    ...action,
+                    comments: [...(action.comments || []), newCommentObj]
+                });
+
+                setNewComment('');
+            };
+
+            return (
+                <div className="bg-gray-50 rounded-md p-3">
+                    <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                            <div className="font-medium">{action.text}</div>
+                            <div className="text-sm text-gray-500">
+                                Assigned to: {action.raci?.responsible || 'Not assigned'}
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => onDelete(action.id)}
+                            className="text-red-500 hover:text-red-700">
+                            ×
+                        </button>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm text-gray-600">Progress</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={action.percentage || 0}
+                                    onChange={e => onUpdate({
+                                        ...action,
+                                        percentage: parseInt(e.target.value)
+                                    })}
+                                    className="w-16 text-sm text-center border rounded p-1"
+                                />
+                            </div>
+                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-blue-600 transition-all duration-300"
+                                    style={{ width: `${action.percentage || 0}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(action.raci || {}).map(([role, person]) => (
+                                <div key={role} className="text-sm">
+                                    <span className="text-gray-600">{
+                                        role.charAt(0).toUpperCase() + role.slice(1)
+                                    }: </span>
+                                    <input
+                                        type="text"
+                                        value={person || ''}
+                                        onChange={e => onUpdate({
+                                            ...action,
+                                            raci: { ...action.raci, [role]: e.target.value }
+                                        })}
+                                        className="border rounded p-1 w-full mt-1"
+                                        placeholder={`Add ${role}`}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        <div>
+                            <button
+                                onClick={() => setShowComments(!showComments)}
+                                className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
+                                {showComments ? 'Hide Comments' : 'Show Comments'} 
+                                ({action.comments?.length || 0})
+                            </button>
+
+                            {showComments && (
+                                <div className="mt-2 space-y-2">
+                                    {action.comments?.map(comment => (
+                                        <div key={comment.id} className="bg-white p-2 rounded-md text-sm">
+                                            <div className="text-gray-500">
+                                                {comment.author} - {new Date(comment.timestamp).toLocaleString()}
+                                            </div>
+                                            <div>{comment.text}</div>
+                                        </div>
+                                    ))}
+
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={newComment}
+                                            onChange={e => setNewComment(e.target.value)}
+                                            placeholder="Add a comment..."
+                                            className="flex-1 border rounded p-2 text-sm"
+                                            onKeyPress={e => {
+                                                if (e.key === 'Enter') handleAddComment();
+                                            }}
+                                        />
+                                        <button
+                                            onClick={handleAddComment}
+                                            className="px-3 py-1 bg-blue-600 text-white rounded 
+                                                     hover:bg-blue-700 text-sm transition-colors">
+                                            Add
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ComplianceDashboard = ({ regulations }) => {
+            if (!window.Recharts) {
+                return <div>Loading charts...</div>;
+            }
+
+            const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+                    BarChart, Bar, PieChart, Pie, Cell } = window.Recharts;
+
+            const complianceData = React.useMemo(() => {
+                const data = [];
+                const today = new Date();
+                for (let i = 30; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    
+                    const compliantCount = regulations.filter(reg => 
+                        reg.status === 'Compliant' && 
+                        new Date(reg.lastUpdated) <= date
+                    ).length;
+
+                    const totalApplicable = regulations.filter(reg =>
+                        reg.status !== 'Non Applicable' &&
+                        new Date(reg.lastUpdated) <= date
+                    ).length;
+
+                    const rate = totalApplicable ? (compliantCount / totalApplicable) * 100 : 0;
+
+                    data.push({
+                        date: dateStr,
+                        rate: parseFloat(rate.toFixed(1))
+                    });
+                }
+                return data;
+            }, [regulations]);
+
+            const statusDistribution = React.useMemo(() => {
+                const distribution = {};
+                regulations.forEach(reg => {
+                    distribution[reg.status] = (distribution[reg.status] || 0) + 1;
+                });
+                return Object.entries(distribution).map(([name, value]) => ({ name, value }));
+            }, [regulations]);
+
+            const riskDistribution = React.useMemo(() => {
+                const distribution = { Low: 0, Medium: 0, High: 0 };
+                regulations.forEach(reg => {
+                    reg.risks?.forEach(risk => {
+                        distribution[risk.level]++;
+                    });
+                });
+                return Object.entries(distribution).map(([name, value]) => ({ name, value }));
+            }, [regulations]);
+
+            const COLORS = {
+                High: '#ef4444',
+                Medium: '#f59e0b',
+                Low: '#10b981',
+                Compliant: '#10b981',
+                'En cours': '#f59e0b',
+                'A faire': '#ef4444',
+                'Non Applicable': '#6b7280',
+                Documentation: '#3b82f6'
+            };
+
+            return (
+                <div className="p-4 bg-white rounded-lg shadow-lg">
+                    <h2 className="text-xl font-bold mb-6">Compliance Dashboard</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="chart-container">
+                            <h3 className="text-lg font-semibold mb-4">Compliance Trend</h3>
+                            <LineChart width={400} height={300} data={complianceData}
+                                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" />
+                                <YAxis domain={[0, 100]} />
+                                <Tooltip />
+                                <Legend />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="rate" 
+                                    stroke="#3b82f6" 
+                                    name="Compliance Rate (%)" 
+                                />
+                            </LineChart>
+                        </div>
+
+                        <div className="chart-container">
+                            <h3 className="text-lg font-semibold mb-4">Status Distribution</h3>
+                            <PieChart width={400} height={300}>
+                                <Pie
+                                    data={statusDistribution}
+                                    cx={200}
+                                    cy={150}
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    label={({ name, percent }) => 
+                                        `${name} (${(percent * 100).toFixed(0)}%)`}>
+                                    {statusDistribution.map((entry, index) => (
+                                        <Cell 
+                                            key={`cell-${index}`} 
+                                            fill={COLORS[entry.name] || '#6b7280'} 
+                                        />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                            </PieChart>
+                        </div>
+
+                        <div className="chart-container">
+                            <h3 className="text-lg font-semibold mb-4">Risk Distribution</h3>
+                            <BarChart width={400} height={300} data={riskDistribution}
+                                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Bar dataKey="value" name="Number of Risks">
+                                    {riskDistribution.map((entry, index) => (
+                                        <Cell 
+                                            key={`cell-${index}`} 
+                                            fill={COLORS[entry.name]} 
+                                        />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const RegulationCard = ({ regulation, onUpdate, onDelete }) => {
+            const [expanded, setExpanded] = React.useState(false);
+            const [showRiskModal, setShowRiskModal] = React.useState(false);
+            const [showEditModal, setShowEditModal] = React.useState(false);
+
+            const handleActionAdd = (actionText) => {
+                if (!actionText.trim()) return;
+                
+                const newAction = {
+                    id: generateId(),
+                    text: actionText,
+                    percentage: 0,
+                    createdAt: new Date().toISOString(),
+                    status: 'En cours',
+                    raci: {
+                        responsible: '',
+                        accountable: '',
+                        consulted: '',
+                        informed: ''
+                    },
+                    comments: []
+                };
+
+                onUpdate({
+                    ...regulation,
+                    actions: [...(regulation.actions || []), newAction]
+                });
+            };
+
+            const handleActionUpdate = (actionId, updates) => {
+                onUpdate({
+                    ...regulation,
+                    actions: regulation.actions.map(action =>
+                        action.id === actionId ? { ...action, ...updates } : action
+                    )
+                });
+            };
+
+            const handleActionDelete = (actionId) => {
+                if (!window.confirm('Are you sure you want to delete this action?')) return;
+                
+                onUpdate({
+                    ...regulation,
+                    actions: regulation.actions.filter(action => action.id !== actionId)
+                });
+            };
+
+            const getStatusColor = (status) => {
+                switch (status) {
+                    case 'Compliant': return 'bg-green-100 text-green-800';
+                    case 'En cours': return 'bg-yellow-100 text-yellow-800';
+                    case 'Non Applicable': return 'bg-gray-100 text-gray-800';
+                    default: return 'bg-blue-100 text-blue-800';
+                }
+            };
+
+            const calculateProgress = () => {
+                if (!regulation.actions?.length) return 0;
+                const totalProgress = regulation.actions.reduce(
+                    (sum, action) => sum + (action.percentage || 0), 0
+                );
+                return Math.round(totalProgress / regulation.actions.length);
+            };
+
+            return (
+                <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
+                    <div className="p-4">
+                        <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <h3 className="text-lg font-semibold">{regulation.reference}</h3>
+                                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                                        getStatusColor(regulation.status)
+                                    }`}>
+                                        {regulation.status}
+                                    </span>
+                                </div>
+                                <p className="text-gray-600 mb-2">{regulation.text}</p>
+                                <div className="text-sm text-gray-500">
+                                    Category: {regulation.category}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setExpanded(!expanded)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors">
+                                {expanded ? '▼' : '▶'}
+                            </button>
+                        </div>
+
+                        {expanded && (
+                            <div className="mt-4 space-y-4">
+                                <div className="bg-gray-50 p-4 rounded-md">
+                                    <h4 className="font-medium mb-2">RACI Matrix</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {Object.entries(regulation.raci || {}).map(([role, person]) => (
+                                            <div key={role}>
+                                                <span className="text-sm text-gray-600">{
+                                                    role.charAt(0).toUpperCase() + role.slice(1)
+                                                }</span>
+                                                <div className="font-medium">{person || 'Not assigned'}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm font-medium">Overall Progress</span>
+                                        <span className="text-sm text-gray-600">{calculateProgress()}%</span>
+                                    </div>
+                                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-blue-600 transition-all duration-300"
+                                            style={{ width: `${calculateProgress()}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="font-medium">Actions</h4>
+                                        <button
+                                            onClick={() => {
+                                                const actionText = prompt('Enter action text:');
+                                                if (actionText) handleActionAdd(actionText);
+                                            }}
+                                            className="px-2 py-1 text-sm bg-blue-600 text-white rounded-md 
+                                                     hover:bg-blue-700 transition-colors">
+                                            Add Action
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {regulation.actions?.map(action => (
+                                            <ActionCard
+                                                key={action.id}
+                                                action={action}
+                                                onUpdate={updates => handleActionUpdate(action.id, updates)}
+                                                onDelete={() => handleActionDelete(action.id)}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="font-medium">Risks</h4>
+                                        <button
+                                            onClick={() => setShowRiskModal(true)}
+                                            className="px-2 py-1 text-sm bg-blue-600 text-white rounded-md 
+                                                     hover:bg-blue-700 transition-colors">
+                                            Manage Risks
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {regulation.risks?.map(risk => (
+                                            <div
+                                                key={risk.id}
+                                                className={`p-2 rounded-md ${
+                                                    risk.level === 'High' ? 'bg-red-50' :
+                                                    risk.level === 'Medium' ? 'bg-yellow-50' :
+                                                    'bg-green-50'
+                                                }`}>
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div className="font-medium">{risk.description}</div>
+                                                        <div className="text-sm text-gray-600">
+                                                            Level: {risk.level}
+                                                        </div>
+                                                    </div>
+                                                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                                                        risk.level === 'High' ? 'bg-red-100 text-red-800' :
+                                                        risk.level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-green-100 text-green-800'
+                                                    }`}>
+                                                        {risk.level}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        onClick={() => setShowEditModal(true)}
+                                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md 
+                                                 hover:bg-gray-200 transition-colors">
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Are you sure you want to delete this regulation?')) {
+                                                onDelete(regulation.id);
+                                            }
+                                        }}
+                                        className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-md 
+                                                 hover:bg-red-200 transition-colors">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <Modal
+                        isOpen={showRiskModal}
+                        onClose={() => setShowRiskModal(false)}
+                        title="Risk Management">
+                        <RiskManagement
+                            risks={regulation.risks}
+                            onUpdate={risks => {
+                                onUpdate({ ...regulation, risks });
+                                setShowRiskModal(false);
+                            }}
+                        />
+                    </Modal>
+
+                    <Modal
+                        isOpen={showEditModal}
+                        onClose={() => setShowEditModal(false)}
+                        title="Edit Regulation">
+                        <RegulationForm
+                            initialData={regulation}
+                            onSubmit={(updatedRegulation) => {
+                                onUpdate(updatedRegulation);
+                                setShowEditModal(false);
+                            }}
+                            onClose={() => setShowEditModal(false)}
+                        />
+                    </Modal>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [regulations, setRegulations] = React.useState([]);
+            const [showAddModal, setShowAddModal] = React.useState(false);
+            const [toast, setToast] = React.useState(null);
+            const { currentUser } = React.useContext(AppContext);
+
+            // Load regulations from localStorage on mount
+            React.useEffect(() => {
+                const stored = localStorage.getItem('regulations');
+                if (stored) {
+                    setRegulations(JSON.parse(stored));
+                }
+            }, []);
+
+            // Save regulations to localStorage whenever they change
+            React.useEffect(() => {
+                localStorage.setItem('regulations', JSON.stringify(regulations));
+            }, [regulations]);
+
+            const handleAddRegulation = (regulation) => {
+                setRegulations([...regulations, regulation]);
+                setToast({ message: 'Regulation ajoutée avec succès!', type: 'success' });
+            };
+
+            const handleUpdateRegulation = (updatedRegulation) => {
+                setRegulations(regulations.map(reg => 
+                    reg.id === updatedRegulation.id ? updatedRegulation : reg
+                ));
+                setToast({ message: 'Regulation mise à jour avec succès!', type: 'success' });
+            };
+
+            const handleDeleteRegulation = (id) => {
+                setRegulations(regulations.filter(reg => reg.id !== id));
+                setToast({ message: 'Regulation supprimée avec succès!', type: 'success' });
+            };
+
+            const exportToPDF = () => {
+                html2canvas(document.getElementById('exportable')).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                    const imgProps= pdf.getImageProperties(imgData);
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    pdf.save('DORA_Compliance_Tracker.pdf');
+                });
+            };
+
+            const exportToExcel = () => {
+                const ws = XLSX.utils.json_to_sheet(regulations);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Regulations');
+                XLSX.writeFile(wb, 'DORA_Compliance_Tracker.xlsx');
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-100 p-4">
+                    <header className="flex justify-between items-center mb-6">
+                        <h1 className="text-2xl font-bold text-gray-800">DORA Compliance Tracker</h1>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                Ajouter Régulation
+                            </button>
+                            <button
+                                onClick={exportToPDF}
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                Exporter PDF
+                            </button>
+                            <button
+                                onClick={exportToExcel}
+                                className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700">
+                                Exporter Excel
+                            </button>
+                        </div>
+                    </header>
+
+                    <ComplianceDashboard regulations={regulations} />
+
+                    <section className="mt-8">
+                        <h2 className="text-xl font-semibold mb-4">Liste des Régulations</h2>
+                        {regulations.length === 0 ? (
+                            <p className="text-gray-600">Aucune régulation trouvée. Ajoutez-en une nouvelle pour commencer.</p>
+                        ) : (
+                            <div className="dashboard-grid">
+                                {regulations.map(regulation => (
+                                    <RegulationCard
+                                        key={regulation.id}
+                                        regulation={regulation}
+                                        onUpdate={handleUpdateRegulation}
+                                        onDelete={handleDeleteRegulation}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    <Modal
+                        isOpen={showAddModal}
+                        onClose={() => setShowAddModal(false)}
+                        title="Ajouter Régulation">
+                        <RegulationForm
+                            onSubmit={handleAddRegulation}
+                            onClose={() => setShowAddModal(false)}
+                        />
+                    </Modal>
+
+                    {toast && (
+                        <div className={`toast ${toast.show ? 'show' : 'hide'}`}>
+                            <Toast 
+                                message={toast.message}
+                                type={toast.type}
+                                onClose={() => setToast(null)}
+                            />
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Vérifier les dépendances et démarrer l'application
+        const checkDependencies = () => {
+            if (!window.React) {
+                throw new Error('React is not loaded');
+            }
+            if (!window.ReactDOM) {
+                throw new Error('ReactDOM is not loaded');
+            }
+            if (!window.PropTypes) {
+                throw new Error('PropTypes is not loaded');
+            }
+            if (!window.Recharts) {
+                throw new Error('Recharts is not loaded');
+            }
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                throw new Error('jsPDF is not loaded');
+            }
+            if (!window.html2canvas) {
+                throw new Error('html2canvas is not loaded');
+            }
+            if (!window.XLSX) {
+                throw new Error('XLSX is not loaded');
+            }
+        };
+
+        const start = () => {
+            try {
+                checkDependencies();
+                
+                const container = document.getElementById('root');
+                const root = ReactDOM.createRoot(container);
+                
+                root.render(
+                    <AppContext.Provider value={{ currentUser: { role: ROLES.ADMIN } }}>
+                        <App />
+                    </AppContext.Provider>
+                );
+                
+                // Remove loading indicator
+                const loading = document.getElementById('loading');
+                if (loading) loading.remove();
+            } catch (error) {
+                console.error('Error starting app:', error);
+                document.body.innerHTML = `
+                    <div style="padding: 20px; color: #ef4444; margin: 20px; border: 1px solid #ef4444; border-radius: 8px;">
+                        <h2>Error Starting Application</h2>
+                        <pre>${error.message}</pre>
+                        <p>Please check console for more details.</p>
+                    </div>
+                `;
+            }
+        };
+
+        // Démarrer l'application lorsque le DOM est prêt
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', start);
+        } else {
+            start();
+        }
+    </script>
+</body>
+</html>
+
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
