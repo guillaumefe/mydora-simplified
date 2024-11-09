@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,11 +16,7 @@
     <!-- Recharts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.1.12/Recharts.min.js"></script>
     
-    <!-- PDF Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
-    <!-- Excel Export -->
+    <!-- Excel Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <!-- Babel -->
@@ -43,7 +39,7 @@
     </script>
     
     <style>
-        /* Vos styles personnalisés ici (inchangés) */
+        /* Vos styles CSS existants */
         :root {
             --primary-50: #eff6ff;
             --primary-100: #dbeafe;
@@ -62,6 +58,7 @@
             --gray-700: #374151;
             --gray-900: #111827;
         }
+        /* ... (Autres styles existants) ... */
         .fade-enter { opacity: 0; transform: translateY(10px); }
         .fade-enter-active { 
             opacity: 1;
@@ -153,7 +150,7 @@
             padding: 2rem;
             border-radius: 0.5rem;
             max-width: 90%;
-            width: 4000px;
+            width:4000px;
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
@@ -190,7 +187,7 @@
     </style>
 </head>
 <body>
-    <!-- Éléments DOM nécessaires (un seul set pour éviter les doublons) -->
+    <!-- Éléments racines sans duplication -->
     <div id="root"></div>
     <div id="modal-root"></div>
     <div id="tooltip-root"></div>
@@ -203,12 +200,11 @@
         transform: translate(-50%, -50%);
         font-size: 20px;
         color: #3b82f6;">
-        Loading DORA Compliance Tracker...
+        Chargement du DORA Compliance Tracker...
     </div>
 
-    <!-- Script principal avec tous les composants et le contexte définis dans un seul bloc -->
     <script type="text/babel">
-        // Définition du Contexte
+        // Définition des rôles et permissions
         const ROLES = {
             ADMIN: 'admin',
             EDITOR: 'editor',
@@ -223,13 +219,16 @@
 
         const STATUS_OPTIONS = ['all', 'A faire', 'En cours', 'Compliant', 'Non Applicable', 'Documentation'];
         const RISK_LEVELS = ['Low', 'Medium', 'High'];
+
+        // Création du contexte
         const AppContext = React.createContext({
             currentUser: { role: ROLES.ADMIN }
         });
 
+        // Fonction utilitaire pour générer des IDs
         const generateId = () => Math.random().toString(36).substr(2, 9);
 
-        // Composants Modal, Toast, RegulationForm, etc. (inchangés)
+        // Composant Modal
         const Modal = ({ isOpen, onClose, title, children }) => {
             if (!isOpen) return null;
 
@@ -253,6 +252,7 @@
             );
         };
 
+        // Composant Toast pour les notifications
         const Toast = ({ message, type = 'success', onClose }) => {
             React.useEffect(() => {
                 const timer = setTimeout(onClose, 3000);
@@ -260,12 +260,13 @@
             }, [onClose]);
 
             return (
-                <div className={`toast ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`}>
+                <div className={`toast ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white p-4 rounded-md shadow-lg`}>
                     {message}
                 </div>
             );
         };
 
+        // Composant de formulaire pour les régulations
         const RegulationForm = ({ onSubmit, onClose, initialData = null }) => {
             const [formData, setFormData] = React.useState(initialData || {
                 category: '',
@@ -383,6 +384,7 @@
             );
         };
 
+        // Composant de gestion des risques
         const RiskManagement = ({ risks = [], onUpdate }) => {
             const [showAddRisk, setShowAddRisk] = React.useState(false);
             const [newRisk, setNewRisk] = React.useState({
@@ -491,6 +493,7 @@
             );
         };
 
+        // Composant pour les actions
         const ActionCard = ({ action, onUpdate, onDelete }) => {
             const [showComments, setShowComments] = React.useState(false);
             const [newComment, setNewComment] = React.useState('');
@@ -524,7 +527,7 @@
                         </div>
                         <button
                             onClick={() => onDelete(action.id)}
-                            className="text-red-500 hover:text-red-700">
+                            className="text-red-500 hover:text-red-700 transition-colors">
                             ×
                         </button>
                     </div>
@@ -618,6 +621,7 @@
             );
         };
 
+        // Composant du Dashboard de Conformité
         const ComplianceDashboard = ({ regulations }) => {
             if (!window.Recharts) {
                 return <div>Loading charts...</div>;
@@ -754,6 +758,7 @@
             );
         };
 
+        // Composant pour chaque régulation
         const RegulationCard = ({ regulation, onUpdate, onDelete }) => {
             const [expanded, setExpanded] = React.useState(false);
             const [showRiskModal, setShowRiskModal] = React.useState(false);
@@ -958,6 +963,7 @@
                         )}
                     </div>
 
+                    {/* Modals pour Risk Management et Edit Regulation */}
                     <Modal
                         isOpen={showRiskModal}
                         onClose={() => setShowRiskModal(false)}
@@ -988,13 +994,14 @@
             );
         };
 
+        // Composant Principal de l'Application
         const App = () => {
             const [regulations, setRegulations] = React.useState([]);
             const [showAddModal, setShowAddModal] = React.useState(false);
             const [toast, setToast] = React.useState(null);
             const { currentUser } = React.useContext(AppContext);
 
-            // Load regulations from localStorage on mount
+            // Charger les régulations depuis le localStorage lors du montage
             React.useEffect(() => {
                 const stored = localStorage.getItem('regulations');
                 if (stored) {
@@ -1002,40 +1009,78 @@
                 }
             }, []);
 
-            // Save regulations to localStorage whenever they change
+            // Sauvegarder les régulations dans le localStorage à chaque changement
             React.useEffect(() => {
                 localStorage.setItem('regulations', JSON.stringify(regulations));
             }, [regulations]);
 
+            // Supprimer l'indicateur de chargement après le rendu
+            React.useEffect(() => {
+                const loading = document.getElementById('loading');
+                if (loading) loading.remove();
+            }, []);
+
             const handleAddRegulation = (regulation) => {
                 setRegulations([...regulations, regulation]);
-                setToast({ message: 'Regulation ajoutée avec succès!', type: 'success' });
+                setToast({ message: 'Régulation ajoutée avec succès!', type: 'success' });
             };
 
             const handleUpdateRegulation = (updatedRegulation) => {
                 setRegulations(regulations.map(reg => 
                     reg.id === updatedRegulation.id ? updatedRegulation : reg
                 ));
-                setToast({ message: 'Regulation mise à jour avec succès!', type: 'success' });
+                setToast({ message: 'Régulation mise à jour avec succès!', type: 'success' });
             };
 
             const handleDeleteRegulation = (id) => {
                 setRegulations(regulations.filter(reg => reg.id !== id));
-                setToast({ message: 'Regulation supprimée avec succès!', type: 'success' });
+                setToast({ message: 'Régulation supprimée avec succès!', type: 'success' });
             };
 
-            const exportToPDF = () => {
-                html2canvas(document.getElementById('exportable')).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-                    const imgProps= pdf.getImageProperties(imgData);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    pdf.save('DORA_Compliance_Tracker.pdf');
-                });
+            // Fonction d'importation depuis Excel
+            const importFromExcel = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+
+                    // Supposons que les données sont dans la première feuille
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+                    // Transformation des données en format régulation
+                    const importedRegulations = jsonData.map(item => ({
+                        id: item.id || generateId(),
+                        category: item.category || '',
+                        reference: item.reference || '',
+                        text: item.text || '',
+                        raci: {
+                            responsible: item.responsible || '',
+                            accountable: item.accountable || '',
+                            consulted: item.consulted || '',
+                            informed: item.informed || ''
+                        },
+                        status: item.status || 'A faire',
+                        actions: item.actions ? JSON.parse(item.actions) : [],
+                        risks: item.risks ? JSON.parse(item.risks) : [],
+                        lastUpdated: item.lastUpdated || new Date().toISOString()
+                    }));
+
+                    setRegulations(importedRegulations);
+                    setToast({ message: 'Importation réussie!', type: 'success' });
+                };
+                reader.onerror = (ex) => {
+                    console.error(ex);
+                    setToast({ message: 'Erreur lors de l\'importation.', type: 'danger' });
+                };
+                reader.readAsBinaryString(file);
             };
 
+            // Fonction d'exportation en Excel (si nécessaire)
             const exportToExcel = () => {
                 const ws = XLSX.utils.json_to_sheet(regulations);
                 const wb = XLSX.utils.book_new();
@@ -1045,19 +1090,23 @@
 
             return (
                 <div className="min-h-screen bg-gray-100 p-4">
-                    <header className="flex justify-between items-center mb-6">
+                    <header className="flex flex-col md:flex-row justify-between items-center mb-6">
                         <h1 className="text-2xl font-bold text-gray-800">DORA Compliance Tracker</h1>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0">
                             <button
                                 onClick={() => setShowAddModal(true)}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                                 Ajouter Régulation
                             </button>
-                            <button
-                                onClick={exportToPDF}
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                                Exporter PDF
-                            </button>
+                            <label className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 cursor-pointer">
+                                Importer Excel
+                                <input
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    onChange={importFromExcel}
+                                    className="hidden"
+                                />
+                            </label>
                             <button
                                 onClick={exportToExcel}
                                 className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700">
@@ -1097,7 +1146,7 @@
                     </Modal>
 
                     {toast && (
-                        <div className={`toast ${toast.show ? 'show' : 'hide'}`}>
+                        <div className="fixed bottom-4 right-4">
                             <Toast 
                                 message={toast.message}
                                 type={toast.type}
@@ -1109,144 +1158,12 @@
             );
         };
 
-        // Vérifier les dépendances et démarrer l'application
-        const checkDependencies = () => {
-            if (!window.React) {
-                throw new Error('React is not loaded');
-            }
-            if (!window.ReactDOM) {
-                throw new Error('ReactDOM is not loaded');
-            }
-            if (!window.PropTypes) {
-                throw new Error('PropTypes is not loaded');
-            }
-            if (!window.Recharts) {
-                throw new Error('Recharts is not loaded');
-            }
-            if (!window.jspdf || !window.jspdf.jsPDF) {
-                throw new Error('jsPDF is not loaded');
-            }
-            if (!window.html2canvas) {
-                throw new Error('html2canvas is not loaded');
-            }
-            if (!window.XLSX) {
-                throw new Error('XLSX is not loaded');
-            }
-        };
-
-        const start = () => {
-            try {
-                checkDependencies();
-                
-                const container = document.getElementById('root');
-                const root = ReactDOM.createRoot(container);
-                
-                root.render(
-                    <AppContext.Provider value={{ currentUser: { role: ROLES.ADMIN } }}>
-                        <App />
-                    </AppContext.Provider>
-                );
-                
-                // Remove loading indicator
-                const loading = document.getElementById('loading');
-                if (loading) loading.remove();
-            } catch (error) {
-                console.error('Error starting app:', error);
-                document.body.innerHTML = `
-                    <div style="padding: 20px; color: #ef4444; margin: 20px; border: 1px solid #ef4444; border-radius: 8px;">
-                        <h2>Error Starting Application</h2>
-                        <pre>${error.message}</pre>
-                        <p>Please check console for more details.</p>
-                    </div>
-                `;
-            }
-        };
-
-        // Démarrer l'application lorsque le DOM est prêt
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', start);
-        } else {
-            start();
-        }
+        // Rendu de l'application
+        ReactDOM.createRoot(document.getElementById('root')).render(
+            <AppContext.Provider value={{ currentUser: { role: ROLES.ADMIN } }}>
+                <App />
+            </AppContext.Provider>
+        );
     </script>
 </body>
 </html>
-
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
