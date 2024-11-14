@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DORA Compliance Tracker</title>
-   
+    
     <!-- Core React Dependencies -->
     <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
@@ -12,16 +12,16 @@
 
     <!-- D3 (Required by Recharts) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-   
+    
     <!-- Recharts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.1.12/Recharts.min.js"></script>
-   
+    
     <!-- Excel Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-   
+    
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-   
+    
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -37,9 +37,9 @@
             ]
         });
     </script>
-   
+    
     <style>
-        /* Styles CSS de base */
+        /* Vos styles CSS existants */
         :root {
             --primary-50: #eff6ff;
             --primary-100: #dbeafe;
@@ -58,9 +58,9 @@
             --gray-700: #374151;
             --gray-900: #111827;
         }
-
+        /* ... (Autres styles existants) ... */
         .fade-enter { opacity: 0; transform: translateY(10px); }
-        .fade-enter-active {
+        .fade-enter-active { 
             opacity: 1;
             transform: translateY(0);
             transition: opacity 300ms, transform 300ms;
@@ -71,8 +71,6 @@
             transform: translateY(-10px);
             transition: opacity 300ms, transform 300ms;
         }
-
-        /* Styles pour la scrollbar personnalisée */
         .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -88,15 +86,12 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: var(--gray-400);
         }
-
-        /* Layout et composants */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1rem;
             padding: 1rem;
         }
-       
         .chart-container {
             background: white;
             border-radius: 8px;
@@ -104,12 +99,40 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: box-shadow 0.3s ease;
         }
-       
         .chart-container:hover {
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-
-        /* Modal et overlays */
+        .report-page {
+            background: white;
+            padding: 2rem;
+            margin: 1rem auto;
+            max-width: 210mm;
+            min-height: 297mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-500);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .custom-tooltip {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 0.5rem;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.875rem;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        [data-role="admin"] { border-left: 4px solid var(--primary-500); }
+        [data-role="editor"] { border-left: 4px solid var(--success-500); }
+        [data-role="viewer"] { border-left: 4px solid var(--gray-500); }
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -122,19 +145,16 @@
             align-items: center;
             z-index: 50;
         }
-       
         .modal-content {
             background: white;
             padding: 2rem;
             border-radius: 0.5rem;
             max-width: 90%;
-            width: 800px;
+            width:4000px;
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
         }
-
-        /* Toast notifications */
         .toast {
             position: fixed;
             bottom: 1rem;
@@ -146,63 +166,20 @@
             z-index: 100;
             transition: transform 0.3s ease-in-out;
         }
-       
-        .toast.show { transform: translateY(0); }
-        .toast.hide { transform: translateY(100%); }
-
-        /* Animations et loading */
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .toast.show {
+            transform: translateY(0);
         }
-       
-        .loading-spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid var(--gray-200);
-            border-top-color: var(--primary-500);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .toast.hide {
+            transform: translateY(100%);
         }
-
-        /* Styles pour les suggestions d'autocomplétion */
-        .suggestions-container {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid var(--gray-200);
-            border-radius: 0.25rem;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-        }
-
-        .suggestion-item {
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-        }
-
-        .suggestion-item:hover {
-            background-color: var(--primary-50);
-        }
-
-        /* Styles pour le texte formaté */
-        .formatted-text {
-            white-space: pre-wrap;
-            font-family: monospace;
-            background-color: var(--gray-50);
-            padding: 1rem;
-            border-radius: 0.25rem;
-            margin: 0.5rem 0;
-        }
-
-        /* Media queries pour l'impression */
         @media print {
-            .no-print { display: none; }
-            .print-only { display: block; }
+            .no-print {
+                display: none;
+            }
+            .print-only {
+                display: block;
+            }
         }
-       
         @page {
             size: A4;
             margin: 2cm;
@@ -210,7 +187,7 @@
     </style>
 </head>
 <body>
-    <!-- Éléments racines -->
+    <!-- Éléments racines sans duplication -->
     <div id="root"></div>
     <div id="modal-root"></div>
     <div id="tooltip-root"></div>
@@ -227,7 +204,7 @@
     </div>
 
     <script type="text/babel">
-        // Constantes et configurations
+        // Définition des rôles et permissions
         const ROLES = {
             ADMIN: 'admin',
             EDITOR: 'editor',
@@ -248,52 +225,8 @@
             currentUser: { role: ROLES.ADMIN }
         });
 
-        // Utilitaires
+        // Fonction utilitaire pour générer des IDs
         const generateId = () => Math.random().toString(36).substr(2, 9);
-
-        // Composant de recherche
-        const SearchBar = ({ onSearch }) => {
-            const [searchTerm, setSearchTerm] = React.useState(() => {
-                return localStorage.getItem('searchTerm') || '';
-            });
-
-            React.useEffect(() => {
-                localStorage.setItem('searchTerm', searchTerm);
-                onSearch(searchTerm);
-            }, [searchTerm]);
-
-            return (
-                <div className="mb-4">
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Rechercher des exigences..."
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-            );
-        };
-
-        // Fonction de recherche
-        const searchRegulations = (regulations, searchTerm) => {
-            if (!searchTerm.trim()) return regulations;
-
-            const terms = searchTerm.toLowerCase().split(' ');
-           
-            return regulations.map(reg => {
-                const text = `${reg.reference} ${reg.text} ${reg.category}`.toLowerCase();
-                const exactMatch = text.includes(searchTerm.toLowerCase());
-                const matchingWords = terms.filter(term => text.includes(term)).length;
-               
-                return {
-                    ...reg,
-                    score: exactMatch ? terms.length + 1 : matchingWords
-                };
-            })
-            .filter(reg => reg.score > 0)
-            .sort((a, b) => b.score - a.score);
-        };
 
         // Composant Modal
         const Modal = ({ isOpen, onClose, title, children }) => {
@@ -301,12 +234,12 @@
 
             return ReactDOM.createPortal(
                 <div className="modal-overlay" onClick={onClose}>
-                    <div
+                    <div 
                         className="modal-content"
                         onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold">{title}</h2>
-                            <button
+                            <button 
                                 onClick={onClose}
                                 className="text-gray-500 hover:text-gray-700 text-xl">
                                 ×
@@ -319,7 +252,7 @@
             );
         };
 
-        // Composant Toast
+        // Composant Toast pour les notifications
         const Toast = ({ message, type = 'success', onClose }) => {
             React.useEffect(() => {
                 const timer = setTimeout(onClose, 3000);
@@ -334,7 +267,7 @@
         };
 
         // Composant de formulaire pour les régulations
-        const RegulationForm = ({ onSubmit, onClose, initialData = null, regulations = [] }) => {
+        const RegulationForm = ({ onSubmit, onClose, initialData = null }) => {
             const [formData, setFormData] = React.useState(initialData || {
                 category: '',
                 reference: '',
@@ -350,33 +283,6 @@
                 risks: []
             });
 
-            const [suggestions, setSuggestions] = React.useState([]);
-            const [showSuggestions, setShowSuggestions] = React.useState(false);
-
-            const handleReferenceChange = (e) => {
-                const value = e.target.value;
-                setFormData({ ...formData, reference: value });
-               
-                if (value.trim()) {
-                    const matches = regulations
-                        .filter(reg => reg.reference.toLowerCase().includes(value.toLowerCase()))
-                        .map(reg => ({ text: reg.text, reference: reg.reference }));
-                    setSuggestions(matches);
-                    setShowSuggestions(true);
-                } else {
-                    setSuggestions([]);
-                    setShowSuggestions(false);
-                }
-            };
-
-            const handleSuggestionClick = (suggestion) => {
-                setFormData(prev => ({
-                    ...prev,
-                    text: suggestion.text
-                }));
-                setShowSuggestions(false);
-            };
-
             const handleSubmit = (e) => {
                 e.preventDefault();
                 onSubmit({
@@ -389,30 +295,6 @@
 
             return (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="relative">
-                        <label className="block text-sm font-medium text-gray-700">Reference</label>
-                        <input
-                            type="text"
-                            value={formData.reference}
-                            onChange={handleReferenceChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="e.g., L1-1, RTS-1"
-                            required
-                        />
-                        {showSuggestions && suggestions.length > 0 && (
-                            <div className="suggestions-container">
-                                {suggestions.map((suggestion, index) => (
-                                    <div
-                                        key={index}
-                                        className="suggestion-item"
-                                        onClick={() => handleSuggestionClick(suggestion)}>
-                                        {suggestion.reference} - {suggestion.text}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Category</label>
                         <select
@@ -425,6 +307,18 @@
                             <option value="RTS">RTS</option>
                             <option value="ITS">ITS</option>
                         </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Reference</label>
+                        <input
+                            type="text"
+                            value={formData.reference}
+                            onChange={e => setFormData({...formData, reference: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g., L1-1, RTS-1"
+                            required
+                        />
                     </div>
 
                     <div>
@@ -490,162 +384,41 @@
             );
         };
 
-        // Composant ActionForm pour l'édition des actions
-        const ActionForm = ({ action, onSubmit, onClose }) => {
-            const [formData, setFormData] = React.useState(action || {
-                text: '',
-                percentage: 0,
-                raci: {
-                    responsible: '',
-                    accountable: '',
-                    consulted: '',
-                    informed: ''
-                },
-                comments: []
-            });
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                onSubmit({
-                    ...formData,
-                    id: formData.id || generateId(),
-                    lastUpdated: new Date().toISOString()
-                });
-                onClose();
-            };
-
-            return (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Description</label>
-                        <textarea
-                            value={formData.text}
-                            onChange={e => setFormData({...formData, text: e.target.value})}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            rows={3}
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Progress (%)</label>
-                        <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={formData.percentage || 0}
-                            onChange={e => setFormData({...formData, percentage: parseInt(e.target.value)})}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="font-medium">RACI Matrix</h4>
-                        {Object.keys(formData.raci || {}).map(role => (
-                            <div key={role}>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.raci[role] || ''}
-                                    onChange={e => setFormData({
-                                        ...formData,
-                                        raci: { ...formData.raci, [role]: e.target.value }
-                                    })}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder={`Enter ${role}`}
-                                />
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="flex justify-end gap-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                            {action ? 'Update' : 'Create'}
-                        </button>
-                    </div>
-                </form>
-            );
-        };
-
-        // Composant de gestion des risques modifié
-        const RiskManagement = ({ risks = [], actions = [], allActions = [], onUpdate }) => {
+        // Composant de gestion des risques
+        const RiskManagement = ({ risks = [], onUpdate }) => {
             const [showAddRisk, setShowAddRisk] = React.useState(false);
             const [newRisk, setNewRisk] = React.useState({
                 description: '',
                 level: 'Medium',
-                remediations: [],
-                isRemediated: false
+                mitigations: []
             });
-
-            const [showAllActions, setShowAllActions] = React.useState(false);
 
             const handleAddRisk = () => {
                 if (!newRisk.description) return;
-               
+                
                 onUpdate([...risks, {
                     ...newRisk,
                     id: generateId(),
                     createdAt: new Date().toISOString()
                 }]);
-               
+                
                 setNewRisk({
                     description: '',
                     level: 'Medium',
-                    remediations: [],
-                    isRemediated: false
+                    mitigations: []
                 });
                 setShowAddRisk(false);
             };
-
-            const handleRemediationToggle = (riskId, actionId) => {
-                onUpdate(risks.map(risk => {
-                    if (risk.id === riskId) {
-                        const newRemediations = risk.remediations?.includes(actionId)
-                            ? risk.remediations.filter(id => id !== actionId)
-                            : [...(risk.remediations || []), actionId];
-                        return { ...risk, remediations: newRemediations };
-                    }
-                    return risk;
-                }));
-            };
-
-            const handleRemediationStatus = (riskId, isRemediated) => {
-                onUpdate(risks.map(risk => {
-                    if (risk.id === riskId) {
-                        return { ...risk, isRemediated };
-                    }
-                    return risk;
-                }));
-            };
-
-            const getAvailableActions = () => showAllActions ? allActions : actions;
 
             return (
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-medium">Risks</h3>
-                        <div className="space-x-2">
-                            <button
-                                onClick={() => setShowAllActions(!showAllActions)}
-                                className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                                {showAllActions ? 'Show Current Actions' : 'Show All Actions'}
-                            </button>
-                            <button
-                                onClick={() => setShowAddRisk(true)}
-                                className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                                Add Risk
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setShowAddRisk(true)}
+                            className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                            Add Risk
+                        </button>
                     </div>
 
                     {showAddRisk && (
@@ -680,14 +453,10 @@
                         </div>
                     )}
 
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         {risks.map(risk => (
-                            <div
-                                key={risk.id}
-                                className={`p-4 border rounded-md ${
-                                    risk.isRemediated ? 'bg-green-50 border-green-200' : 'bg-white'
-                                }`}>
-                                <div className="flex justify-between items-start mb-4">
+                            <div key={risk.id} className="p-4 border rounded-md">
+                                <div className="flex justify-between items-start">
                                     <div>
                                         <h4 className="font-medium">{risk.description}</h4>
                                         <span className={`inline-block px-2 py-1 text-sm rounded-full ${
@@ -698,42 +467,25 @@
                                             {risk.level}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <label className="flex items-center space-x-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={risk.isRemediated}
-                                                onChange={e => handleRemediationStatus(risk.id, e.target.checked)}
-                                                className="rounded text-blue-600"
-                                            />
-                                            <span className="text-sm">Remediated</span>
-                                        </label>
-                                        <button
-                                            onClick={() => onUpdate(risks.filter(r => r.id !== risk.id))}
-                                            className="text-red-500 hover:text-red-700">
-                                            ×
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={() => onUpdate(risks.filter(r => r.id !== risk.id))}
+                                        className="text-red-500 hover:text-red-700">
+                                        ×
+                                    </button>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <h5 className="text-sm font-medium text-gray-700">Remediations</h5>
-                                    <div className="grid gap-2">
-                                        {getAvailableActions().map(action => (
-                                            <label
-                                                key={action.id}
-                                                className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={risk.remediations?.includes(action.id)}
-                                                    onChange={() => handleRemediationToggle(risk.id, action.id)}
-                                                    className="rounded text-blue-600"
-                                                />
-                                                <span className="text-sm">{action.text}</span>
-                                            </label>
-                                        ))}
+                                {risk.mitigations?.length > 0 && (
+                                    <div className="mt-2">
+                                        <h5 className="text-sm font-medium text-gray-700">Mitigations</h5>
+                                        <ul className="mt-1 space-y-1">
+                                            {risk.mitigations.map((mitigation, index) => (
+                                                <li key={index} className="text-sm text-gray-600">
+                                                    • {mitigation}
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -741,9 +493,8 @@
             );
         };
 
-        // Composant pour les actions modifié
+        // Composant pour les actions
         const ActionCard = ({ action, onUpdate, onDelete }) => {
-            const [showEditModal, setShowEditModal] = React.useState(false);
             const [showComments, setShowComments] = React.useState(false);
             const [newComment, setNewComment] = React.useState('');
 
@@ -766,107 +517,107 @@
             };
 
             return (
-                <>
-                    <div className="bg-gray-50 rounded-md p-3">
-                        <div className="flex justify-between items-start mb-2">
-                            <div className="flex-1">
-                                <pre className="font-medium whitespace-pre-wrap">{action.text}</pre>
-                                <div className="text-sm text-gray-500">
-                                    Assigned to: {action.raci?.responsible || 'Not assigned'}
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => setShowEditModal(true)}
-                                    className="text-blue-500 hover:text-blue-700 transition-colors">
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={() => onDelete(action.id)}
-                                    className="text-red-500 hover:text-red-700 transition-colors">
-                                    ×
-                                </button>
+                <div className="bg-gray-50 rounded-md p-3">
+                    <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                            <div className="font-medium">{action.text}</div>
+                            <div className="text-sm text-gray-500">
+                                Assigned to: {action.raci?.responsible || 'Not assigned'}
                             </div>
                         </div>
-
-                        <div className="space-y-3">
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm text-gray-600">Progress</span>
-                                    <span className="text-sm text-gray-600">{action.percentage || 0}%</span>
-                                </div>
-                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-blue-600 transition-all duration-300"
-                                        style={{ width: `${action.percentage || 0}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2">
-                                {Object.entries(action.raci || {}).map(([role, person]) => (
-                                    <div key={role} className="text-sm">
-                                        <span className="text-gray-600">{
-                                            role.charAt(0).toUpperCase() + role.slice(1)
-                                        }: </span>
-                                        <span>{person || 'Not assigned'}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div>
-                                <button
-                                    onClick={() => setShowComments(!showComments)}
-                                    className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
-                                    {showComments ? 'Hide Comments' : 'Show Comments'}
-                                    ({action.comments?.length || 0})
-                                </button>
-
-                                {showComments && (
-                                    <div className="mt-2 space-y-2">
-                                        {action.comments?.map(comment => (
-                                            <div key={comment.id} className="bg-white p-2 rounded-md text-sm">
-                                                <div className="text-gray-500">
-                                                    {comment.author} - {new Date(comment.timestamp).toLocaleString()}
-                                                </div>
-                                                <div>{comment.text}</div>
-                                            </div>
-                                        ))}
-
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={newComment}
-                                                onChange={e => setNewComment(e.target.value)}
-                                                placeholder="Add a comment..."
-                                                className="flex-1 border rounded p-2 text-sm"
-                                                onKeyPress={e => {
-                                                    if (e.key === 'Enter') handleAddComment();
-                                                }}
-                                            />
-                                            <button
-                                                onClick={handleAddComment}
-                                                className="px-3 py-1 bg-blue-600 text-white rounded
-                                                         hover:bg-blue-700 text-sm transition-colors">
-                                                Add
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        <button
+                            onClick={() => onDelete(action.id)}
+                            className="text-red-500 hover:text-red-700 transition-colors">
+                            ×
+                        </button>
                     </div>
 
-                    <Modal
-                        isOpen={showEditModal}
-                        onClose={() => setShowEditModal(false)}
-                        title="Edit Action">
-                        <ActionForm
-                            action={action}
-                            onSubmit={onUpdate}
-                            onClose={() => setShowEditModal(false)}
-                        />
-                    </Modal>
-                </>
+                    <div className="space-y-3">
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm text-gray-600">Progress</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={action.percentage || 0}
+                                    onChange={e => onUpdate({
+                                        ...action,
+                                        percentage: parseInt(e.target.value)
+                                    })}
+                                    className="w-16 text-sm text-center border rounded p-1"
+                                />
+                            </div>
+                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-blue-600 transition-all duration-300"
+                                    style={{ width: `${action.percentage || 0}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(action.raci || {}).map(([role, person]) => (
+                                <div key={role} className="text-sm">
+                                    <span className="text-gray-600">{
+                                        role.charAt(0).toUpperCase() + role.slice(1)
+                                    }: </span>
+                                    <input
+                                        type="text"
+                                        value={person || ''}
+                                        onChange={e => onUpdate({
+                                            ...action,
+                                            raci: { ...action.raci, [role]: e.target.value }
+                                        })}
+                                        className="border rounded p-1 w-full mt-1"
+                                        placeholder={`Add ${role}`}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        <div>
+                            <button
+                                onClick={() => setShowComments(!showComments)}
+                                className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
+                                {showComments ? 'Hide Comments' : 'Show Comments'} 
+                                ({action.comments?.length || 0})
+                            </button>
+
+                            {showComments && (
+                                <div className="mt-2 space-y-2">
+                                    {action.comments?.map(comment => (
+                                        <div key={comment.id} className="bg-white p-2 rounded-md text-sm">
+                                            <div className="text-gray-500">
+                                                {comment.author} - {new Date(comment.timestamp).toLocaleString()}
+                                            </div>
+                                            <div>{comment.text}</div>
+                                        </div>
+                                    ))}
+
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={newComment}
+                                            onChange={e => setNewComment(e.target.value)}
+                                            placeholder="Add a comment..."
+                                            className="flex-1 border rounded p-2 text-sm"
+                                            onKeyPress={e => {
+                                                if (e.key === 'Enter') handleAddComment();
+                                            }}
+                                        />
+                                        <button
+                                            onClick={handleAddComment}
+                                            className="px-3 py-1 bg-blue-600 text-white rounded 
+                                                     hover:bg-blue-700 text-sm transition-colors">
+                                            Add
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
             );
         };
 
@@ -886,9 +637,9 @@
                     const date = new Date(today);
                     date.setDate(date.getDate() - i);
                     const dateStr = date.toISOString().split('T')[0];
-                   
-                    const compliantCount = regulations.filter(reg =>
-                        reg.status === 'Compliant' &&
+                    
+                    const compliantCount = regulations.filter(reg => 
+                        reg.status === 'Compliant' && 
                         new Date(reg.lastUpdated) <= date
                     ).length;
 
@@ -919,9 +670,7 @@
                 const distribution = { Low: 0, Medium: 0, High: 0 };
                 regulations.forEach(reg => {
                     reg.risks?.forEach(risk => {
-                        if (!risk.isRemediated) { // Ne compte que les risques non remédiés
-                            distribution[risk.level]++;
-                        }
+                        distribution[risk.level]++;
                     });
                 });
                 return Object.entries(distribution).map(([name, value]) => ({ name, value }));
@@ -941,7 +690,7 @@
             return (
                 <div className="p-4 bg-white rounded-lg shadow-lg">
                     <h2 className="text-xl font-bold mb-6">Compliance Dashboard</h2>
-                   
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="chart-container">
                             <h3 className="text-lg font-semibold mb-4">Compliance Trend</h3>
@@ -952,11 +701,11 @@
                                 <YAxis domain={[0, 100]} />
                                 <Tooltip />
                                 <Legend />
-                                <Line
-                                    type="monotone"
-                                    dataKey="rate"
-                                    stroke="#3b82f6"
-                                    name="Compliance Rate (%)"
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="rate" 
+                                    stroke="#3b82f6" 
+                                    name="Compliance Rate (%)" 
                                 />
                             </LineChart>
                         </div>
@@ -972,12 +721,12 @@
                                     outerRadius={100}
                                     fill="#8884d8"
                                     dataKey="value"
-                                    label={({ name, percent }) =>
+                                    label={({ name, percent }) => 
                                         `${name} (${(percent * 100).toFixed(0)}%)`}>
                                     {statusDistribution.map((entry, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={COLORS[entry.name] || '#6b7280'}
+                                        <Cell 
+                                            key={`cell-${index}`} 
+                                            fill={COLORS[entry.name] || '#6b7280'} 
                                         />
                                     ))}
                                 </Pie>
@@ -986,7 +735,7 @@
                         </div>
 
                         <div className="chart-container">
-                            <h3 className="text-lg font-semibold mb-4">Active Risk Distribution</h3>
+                            <h3 className="text-lg font-semibold mb-4">Risk Distribution</h3>
                             <BarChart width={400} height={300} data={riskDistribution}
                                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
@@ -996,9 +745,9 @@
                                 <Legend />
                                 <Bar dataKey="value" name="Number of Risks">
                                     {riskDistribution.map((entry, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={COLORS[entry.name]}
+                                        <Cell 
+                                            key={`cell-${index}`} 
+                                            fill={COLORS[entry.name]} 
                                         />
                                     ))}
                                 </Bar>
@@ -1009,144 +758,52 @@
             );
         };
 
-        // Fonction d'exportation Excel modifiée
-        const exportToExcel = (regulations) => {
-            const rows = [];
-           
-            regulations.forEach(reg => {
-                // Informations de base de la régulation
-                const baseRow = {
-                    id: reg.id,
-                    reference: reg.reference,
-                    category: reg.category,
-                    text: reg.text,
-                    status: reg.status,
-                    lastUpdated: reg.lastUpdated
-                };
-
-                // Pour chaque action
-                reg.actions?.forEach(action => {
-                    const actionRow = {
-                        ...baseRow,
-                        action_id: action.id,
-                        action_text: action.text,
-                        action_percentage: action.percentage,
-                        action_R: action.raci?.responsible || '',
-                        action_A: action.raci?.accountable || '',
-                        action_C: action.raci?.consulted || '',
-                        action_I: action.raci?.informed || ''
-                    };
-
-                    // Si l'action a des risques associés
-                    const relatedRisks = reg.risks?.filter(risk =>
-                        risk.remediations?.includes(action.id)
-                    );
-
-                    if (relatedRisks?.length) {
-                        relatedRisks.forEach(risk => {
-                            rows.push({
-                                ...actionRow,
-                                risk_id: risk.id,
-                                risk_description: risk.description,
-                                risk_level: risk.level,
-                                risk_remediated: risk.isRemediated ? 'Yes' : 'No'
-                            });
-                        });
-                    } else {
-                        rows.push(actionRow);
-                    }
-                });
-
-                // Ajouter les risques qui n'ont pas d'actions associées
-                const unlinkedRisks = reg.risks?.filter(risk =>
-                    !risk.remediations?.length
-                );
-
-                unlinkedRisks?.forEach(risk => {
-                    rows.push({
-                        ...baseRow,
-                        risk_id: risk.id,
-                        risk_description: risk.description,
-                        risk_level: risk.level,
-                        risk_remediated: risk.isRemediated ? 'Yes' : 'No'
-                    });
-                });
-            });
-
-            const ws = XLSX.utils.json_to_sheet(rows);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Regulations');
-            XLSX.writeFile(wb, 'DORA_Compliance_Tracker.xlsx');
-        };
-
         // Composant pour chaque régulation
-        const RegulationCard = ({ regulation, onUpdate, onDelete, allRegulations }) => {
+        const RegulationCard = ({ regulation, onUpdate, onDelete }) => {
             const [expanded, setExpanded] = React.useState(false);
             const [showRiskModal, setShowRiskModal] = React.useState(false);
             const [showEditModal, setShowEditModal] = React.useState(false);
-            const [showActionModal, setShowActionModal] = React.useState(false);
-            const [selectedAction, setSelectedAction] = React.useState(null);
 
-            // Récupérer toutes les actions de toutes les régulations
-            const allActions = React.useMemo(() => {
-                return allRegulations.reduce((acc, reg) => {
-                    const actions = reg.actions?.map(action => ({
-                        ...action,
-                        regulationRef: reg.reference
-                    })) || [];
-                    return [...acc, ...actions];
-                }, []);
-            }, [allRegulations]);
-
-            const handleActionAdd = (actionData) => {
+            const handleActionAdd = (actionText) => {
+                if (!actionText.trim()) return;
+                
                 const newAction = {
-                    ...actionData,
                     id: generateId(),
-                    createdAt: new Date().toISOString()
+                    text: actionText,
+                    percentage: 0,
+                    createdAt: new Date().toISOString(),
+                    status: 'En cours',
+                    raci: {
+                        responsible: '',
+                        accountable: '',
+                        consulted: '',
+                        informed: ''
+                    },
+                    comments: []
                 };
 
                 onUpdate({
                     ...regulation,
                     actions: [...(regulation.actions || []), newAction]
                 });
-               
-                setShowActionModal(false);
             };
 
             const handleActionUpdate = (actionId, updates) => {
-                const updatedRegulation = {
+                onUpdate({
                     ...regulation,
                     actions: regulation.actions.map(action =>
                         action.id === actionId ? { ...action, ...updates } : action
                     )
-                };
-
-                // Mise à jour automatique du statut
-                const hasProgress = updatedRegulation.actions.some(action => action.percentage > 0);
-                if (hasProgress && updatedRegulation.status === 'A faire') {
-                    updatedRegulation.status = 'En cours';
-                } else if (!hasProgress && updatedRegulation.status === 'En cours') {
-                    updatedRegulation.status = 'A faire';
-                }
-
-                onUpdate(updatedRegulation);
+                });
             };
 
             const handleActionDelete = (actionId) => {
                 if (!window.confirm('Are you sure you want to delete this action?')) return;
-               
-                const updatedRegulation = {
+                
+                onUpdate({
                     ...regulation,
                     actions: regulation.actions.filter(action => action.id !== actionId)
-                };
-
-                // Mise à jour automatique du statut
-                const hasProgress = updatedRegulation.actions.some(action => action.percentage > 0);
-                if (!hasProgress && updatedRegulation.status === 'En cours') {
-                    updatedRegulation.status = 'A faire';
-                }
-
-                onUpdate(updatedRegulation);
+                });
             };
 
             const getStatusColor = (status) => {
@@ -1154,7 +811,6 @@
                     case 'Compliant': return 'bg-green-100 text-green-800';
                     case 'En cours': return 'bg-yellow-100 text-yellow-800';
                     case 'Non Applicable': return 'bg-gray-100 text-gray-800';
-                    case 'A faire': return 'bg-red-100 text-red-800';
                     default: return 'bg-blue-100 text-blue-800';
                 }
             };
@@ -1180,7 +836,7 @@
                                         {regulation.status}
                                     </span>
                                 </div>
-                                <pre className="text-gray-600 mb-2 whitespace-pre-wrap font-sans">{regulation.text}</pre>
+                                <p className="text-gray-600 mb-2">{regulation.text}</p>
                                 <div className="text-sm text-gray-500">
                                     Category: {regulation.category}
                                 </div>
@@ -1226,10 +882,10 @@
                                         <h4 className="font-medium">Actions</h4>
                                         <button
                                             onClick={() => {
-                                                setSelectedAction(null);
-                                                setShowActionModal(true);
+                                                const actionText = prompt('Enter action text:');
+                                                if (actionText) handleActionAdd(actionText);
                                             }}
-                                            className="px-2 py-1 text-sm bg-blue-600 text-white rounded-md
+                                            className="px-2 py-1 text-sm bg-blue-600 text-white rounded-md 
                                                      hover:bg-blue-700 transition-colors">
                                             Add Action
                                         </button>
@@ -1251,7 +907,7 @@
                                         <h4 className="font-medium">Risks</h4>
                                         <button
                                             onClick={() => setShowRiskModal(true)}
-                                            className="px-2 py-1 text-sm bg-blue-600 text-white rounded-md
+                                            className="px-2 py-1 text-sm bg-blue-600 text-white rounded-md 
                                                      hover:bg-blue-700 transition-colors">
                                             Manage Risks
                                         </button>
@@ -1270,13 +926,7 @@
                                                         <div className="font-medium">{risk.description}</div>
                                                         <div className="text-sm text-gray-600">
                                                             Level: {risk.level}
-                                                            {risk.isRemediated && ' (Remediated)'}
                                                         </div>
-                                                        {risk.remediations?.length > 0 && (
-                                                            <div className="text-sm text-gray-600 mt-1">
-                                                                Remediations: {risk.remediations.length}
-                                                            </div>
-                                                        )}
                                                     </div>
                                                     <span className={`px-2 py-1 rounded-full text-sm font-medium ${
                                                         risk.level === 'High' ? 'bg-red-100 text-red-800' :
@@ -1294,7 +944,7 @@
                                 <div className="flex justify-end gap-2">
                                     <button
                                         onClick={() => setShowEditModal(true)}
-                                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md
+                                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md 
                                                  hover:bg-gray-200 transition-colors">
                                         Edit
                                     </button>
@@ -1304,7 +954,7 @@
                                                 onDelete(regulation.id);
                                             }
                                         }}
-                                        className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-md
+                                        className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-md 
                                                  hover:bg-red-200 transition-colors">
                                         Delete
                                     </button>
@@ -1313,14 +963,13 @@
                         )}
                     </div>
 
+                    {/* Modals pour Risk Management et Edit Regulation */}
                     <Modal
                         isOpen={showRiskModal}
                         onClose={() => setShowRiskModal(false)}
                         title="Risk Management">
                         <RiskManagement
                             risks={regulation.risks}
-                            actions={regulation.actions}
-                            allActions={allActions}
                             onUpdate={risks => {
                                 onUpdate({ ...regulation, risks });
                                 setShowRiskModal(false);
@@ -1334,26 +983,11 @@
                         title="Edit Regulation">
                         <RegulationForm
                             initialData={regulation}
-                            regulations={allRegulations}
                             onSubmit={(updatedRegulation) => {
                                 onUpdate(updatedRegulation);
                                 setShowEditModal(false);
                             }}
                             onClose={() => setShowEditModal(false)}
-                        />
-                    </Modal>
-
-                    <Modal
-                        isOpen={showActionModal}
-                        onClose={() => setShowActionModal(false)}
-                        title={selectedAction ? "Edit Action" : "Add Action"}>
-                        <ActionForm
-                            action={selectedAction}
-                            onSubmit={selectedAction ?
-                                updates => handleActionUpdate(selectedAction.id, updates) :
-                                handleActionAdd
-                            }
-                            onClose={() => setShowActionModal(false)}
                         />
                     </Modal>
                 </div>
@@ -1363,7 +997,6 @@
         // Composant Principal de l'Application
         const App = () => {
             const [regulations, setRegulations] = React.useState([]);
-            const [filteredRegulations, setFilteredRegulations] = React.useState([]);
             const [showAddModal, setShowAddModal] = React.useState(false);
             const [toast, setToast] = React.useState(null);
             const { currentUser } = React.useContext(AppContext);
@@ -1372,16 +1005,7 @@
             React.useEffect(() => {
                 const stored = localStorage.getItem('regulations');
                 if (stored) {
-                    const loadedRegulations = JSON.parse(stored);
-                    setRegulations(loadedRegulations);
-                   
-                    // Appliquer la recherche sauvegardée si elle existe
-                    const savedSearch = localStorage.getItem('searchTerm');
-                    if (savedSearch) {
-                        setFilteredRegulations(searchRegulations(loadedRegulations, savedSearch));
-                    } else {
-                        setFilteredRegulations(loadedRegulations);
-                    }
+                    setRegulations(JSON.parse(stored));
                 }
             }, []);
 
@@ -1396,35 +1020,73 @@
                 if (loading) loading.remove();
             }, []);
 
-            const handleSearch = React.useCallback((searchTerm) => {
-                const filtered = searchRegulations(regulations, searchTerm);
-                setFilteredRegulations(filtered);
-            }, [regulations]);
-
             const handleAddRegulation = (regulation) => {
-                const newRegulations = [...regulations, regulation];
-                setRegulations(newRegulations);
-                handleSearch(localStorage.getItem('searchTerm') || '');
+                setRegulations([...regulations, regulation]);
                 setToast({ message: 'Régulation ajoutée avec succès!', type: 'success' });
             };
 
             const handleUpdateRegulation = (updatedRegulation) => {
-                const newRegulations = regulations.map(reg =>
+                setRegulations(regulations.map(reg => 
                     reg.id === updatedRegulation.id ? updatedRegulation : reg
-                );
-                setRegulations(newRegulations);
-                handleSearch(localStorage.getItem('searchTerm') || '');
+                ));
                 setToast({ message: 'Régulation mise à jour avec succès!', type: 'success' });
             };
 
             const handleDeleteRegulation = (id) => {
-                const newRegulations = regulations.filter(reg => reg.id !== id);
-                setRegulations(newRegulations);
-                handleSearch(localStorage.getItem('searchTerm') || '');
+                setRegulations(regulations.filter(reg => reg.id !== id));
                 setToast({ message: 'Régulation supprimée avec succès!', type: 'success' });
             };
 
-            const regulationsToDisplay = filteredRegulations.length > 0 ? filteredRegulations : regulations;
+            // Fonction d'importation depuis Excel
+            const importFromExcel = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+
+                    // Supposons que les données sont dans la première feuille
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+                    // Transformation des données en format régulation
+                    const importedRegulations = jsonData.map(item => ({
+                        id: item.id || generateId(),
+                        category: item.category || '',
+                        reference: item.reference || '',
+                        text: item.text || '',
+                        raci: {
+                            responsible: item.responsible || '',
+                            accountable: item.accountable || '',
+                            consulted: item.consulted || '',
+                            informed: item.informed || ''
+                        },
+                        status: item.status || 'A faire',
+                        actions: item.actions ? JSON.parse(item.actions) : [],
+                        risks: item.risks ? JSON.parse(item.risks) : [],
+                        lastUpdated: item.lastUpdated || new Date().toISOString()
+                    }));
+
+                    setRegulations(importedRegulations);
+                    setToast({ message: 'Importation réussie!', type: 'success' });
+                };
+                reader.onerror = (ex) => {
+                    console.error(ex);
+                    setToast({ message: 'Erreur lors de l\'importation.', type: 'danger' });
+                };
+                reader.readAsBinaryString(file);
+            };
+
+            // Fonction d'exportation en Excel (si nécessaire)
+            const exportToExcel = () => {
+                const ws = XLSX.utils.json_to_sheet(regulations);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Regulations');
+                XLSX.writeFile(wb, 'DORA_Compliance_Tracker.xlsx');
+            };
 
             return (
                 <div className="min-h-screen bg-gray-100 p-4">
@@ -1441,75 +1103,32 @@
                                 <input
                                     type="file"
                                     accept=".xlsx, .xls"
-                                    onChange={async (event) => {
-                                        const file = event.target.files[0];
-                                        if (!file) return;
-
-                                        const reader = new FileReader();
-                                        reader.onload = (e) => {
-                                            const data = e.target.result;
-                                            const workbook = XLSX.read(data, { type: 'binary' });
-                                            const sheetName = workbook.SheetNames[0];
-                                            const worksheet = workbook.Sheets[sheetName];
-                                            const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-                                            // Transformation des données
-                                            const importedRegulations = jsonData.map(item => ({
-                                                id: item.id || generateId(),
-                                                category: item.category || '',
-                                                reference: item.reference || '',
-                                                text: item.text || '',
-                                                status: item.status || 'A faire',
-                                                raci: {
-                                                    responsible: item.action_R || '',
-                                                    accountable: item.action_A || '',
-                                                    consulted: item.action_C || '',
-                                                    informed: item.action_I || ''
-                                                },
-                                                actions: [],
-                                                risks: [],
-                                                lastUpdated: new Date().toISOString()
-                                            }));
-
-                                            setRegulations(importedRegulations);
-                                            handleSearch(localStorage.getItem('searchTerm') || '');
-                                            setToast({ message: 'Import réussi!', type: 'success' });
-                                        };
-                                        reader.readAsBinaryString(file);
-                                    }}
+                                    onChange={importFromExcel}
                                     className="hidden"
                                 />
                             </label>
                             <button
-                                onClick={() => exportToExcel(regulationsToDisplay)}
+                                onClick={exportToExcel}
                                 className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700">
                                 Exporter Excel
                             </button>
                         </div>
                     </header>
 
-                    <SearchBar onSearch={handleSearch} />
-
-                    <ComplianceDashboard regulations={regulationsToDisplay} />
+                    <ComplianceDashboard regulations={regulations} />
 
                     <section className="mt-8">
                         <h2 className="text-xl font-semibold mb-4">Liste des Régulations</h2>
-                        {regulationsToDisplay.length === 0 ? (
-                            <p className="text-gray-600">
-                                {regulations.length === 0 ?
-                                    "Aucune régulation trouvée. Ajoutez-en une nouvelle pour commencer." :
-                                    "Aucune régulation ne correspond à votre recherche."
-                                }
-                            </p>
+                        {regulations.length === 0 ? (
+                            <p className="text-gray-600">Aucune régulation trouvée. Ajoutez-en une nouvelle pour commencer.</p>
                         ) : (
                             <div className="dashboard-grid">
-                                {regulationsToDisplay.map(regulation => (
+                                {regulations.map(regulation => (
                                     <RegulationCard
                                         key={regulation.id}
                                         regulation={regulation}
                                         onUpdate={handleUpdateRegulation}
                                         onDelete={handleDeleteRegulation}
-                                        allRegulations={regulations}
                                     />
                                 ))}
                             </div>
@@ -1523,13 +1142,12 @@
                         <RegulationForm
                             onSubmit={handleAddRegulation}
                             onClose={() => setShowAddModal(false)}
-                            regulations={regulations}
                         />
                     </Modal>
 
                     {toast && (
                         <div className="fixed bottom-4 right-4">
-                            <Toast
+                            <Toast 
                                 message={toast.message}
                                 type={toast.type}
                                 onClose={() => setToast(null)}
