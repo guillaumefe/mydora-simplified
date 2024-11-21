@@ -1038,47 +1038,71 @@
             };
 
             // Fonction d'importation depuis Excel
-            const importFromExcel = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
+const importFromExcel = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const data = e.target.result;
-                    const workbook = XLSX.read(data, { type: 'binary' });
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const data = e.target.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
 
-                    // Supposons que les données sont dans la première feuille
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        // Supposons que les données sont dans la première feuille
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-                    // Transformation des données en format régulation
-                    const importedRegulations = jsonData.map(item => ({
-                        id: item.id || generateId(),
-                        category: item.category || '',
-                        reference: item.reference || '',
-                        text: item.text || '',
-                        raci: {
-                            responsible: item.responsible || '',
-                            accountable: item.accountable || '',
-                            consulted: item.consulted || '',
-                            informed: item.informed || ''
-                        },
-                        status: item.status || 'A faire',
-                        actions: item.actions ? JSON.parse(item.actions) : [],
-                        risks: item.risks ? JSON.parse(item.risks) : [],
-                        lastUpdated: item.lastUpdated || new Date().toISOString()
-                    }));
+        // Regrouper les régulations par `reference`
+        const regulationMap = {};
 
-                    setRegulations(importedRegulations);
-                    setToast({ message: 'Importation réussie!', type: 'success' });
+        jsonData.forEach(item => {
+            const reference = item.reference;
+            if (!reference) return; // Ignore les lignes sans référence
+
+            if (!regulationMap[reference]) {
+                regulationMap[reference] = {
+                    id: item.id || generateId(),
+                    category: item.category || '',
+                    reference: item.reference || '',
+                    text: item.text || '',
+                    raci: {
+                        responsible: item.responsible || '',
+                        accountable: item.accountable || '',
+                        consulted: item.consulted || '',
+                        informed: item.informed || ''
+                    },
+                    status: item.status || 'A faire',
+                    actions: [],
+                    risks: [],
+                    lastUpdated: item.lastUpdated || new Date().toISOString()
                 };
-                reader.onerror = (ex) => {
-                    console.error(ex);
-                    setToast({ message: 'Erreur lors de l\'importation.', type: 'danger' });
-                };
-                reader.readAsBinaryString(file);
-            };
+            }
+
+            // Ajouter des actions si elles existent
+            if (item.actions) {
+                try {
+                    const parsedActions = JSON.parse(item.actions);
+                    regulationMap[reference].actions.push(...parsedActions);
+                } catch (error) {
+                    console.error(`Erreur lors du parsing des actions pour la régulation ${reference}:`, error);
+                }
+            }
+        });
+
+        // Convertir le map en tableau
+        const importedRegulations = Object.values(regulationMap);
+
+        setRegulations(importedRegulations);
+        setToast({ message: 'Importation réussie avec toutes les actions!', type: 'success' });
+    };
+    reader.onerror = (ex) => {
+        console.error(ex);
+        setToast({ message: 'Erreur lors de l\'importation.', type: 'danger' });
+    };
+    reader.readAsBinaryString(file);
+};
+
+
 
             // Fonction d'exportation en Excel (si nécessaire)
             const exportToExcel = () => {
